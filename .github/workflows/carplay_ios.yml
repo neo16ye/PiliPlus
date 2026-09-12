@@ -1,0 +1,16 @@
+name: CarPlay iOS Build
+
+on:
+  push:
+    branches:
+      - codex/carplay-fullscreen-20260912
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    uses: ./.github/workflows/ios.yml
+    permissions:
+      contents: read
