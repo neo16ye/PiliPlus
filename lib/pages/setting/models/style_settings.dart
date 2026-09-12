@@ -76,6 +76,15 @@ List<SettingsModel> get styleSettings => [
       }
     },
   ),
+  if (Platform.isIOS)
+    const SwitchModel(
+      title: 'CarPlay 全屏显示',
+      subtitle: '用于 CarBridge/CarPlayEnable，移除车机顶部安全边距',
+      leading: Icon(Icons.directions_car_outlined),
+      setKey: SettingBoxKey.carPlayFullScreen,
+      defaultVal: false,
+      needReboot: true,
+    ),
   const SwitchModel(
     title: '改用侧边栏',
     subtitle: '开启后底栏与顶栏被替换，且相关设置失效',

@@ -22,6 +22,7 @@ import 'package:PiliPlus/utils/mobile_observer.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
@@ -48,6 +49,8 @@ class _MainAppState extends PopScopeState<MainApp>
   late EdgeInsets _padding;
   late ColorScheme _colorScheme;
   Brightness? _brightness;
+
+  bool get _removeTopSafeArea => Platform.isIOS && Pref.carPlayFullScreen;
 
   @override
   bool get initCanPop => false;
@@ -468,7 +471,10 @@ class _MainAppState extends PopScopeState<MainApp>
     }
     return Container(
       width: 80,
-      margin: .only(top: 12 + _padding.top, left: _padding.left),
+      margin: .only(
+        top: 12 + (_removeTopSafeArea ? 0 : _padding.top),
+        left: _padding.left,
+      ),
       child: userAndSearchVertical(),
     );
   }
@@ -504,7 +510,7 @@ class _MainAppState extends PopScopeState<MainApp>
         );
       }
       padding = .only(
-        top: _padding.top,
+        top: _removeTopSafeArea ? 0 : _padding.top,
         left: _padding.left,
         right: _padding.right,
       );
@@ -519,7 +525,10 @@ class _MainAppState extends PopScopeState<MainApp>
         ),
         child: _sideBar(),
       );
-      padding = .only(top: _padding.top, right: _padding.right);
+      padding = .only(
+        top: _removeTopSafeArea ? 0 : _padding.top,
+        right: _padding.right,
+      );
     }
 
     child = Material(

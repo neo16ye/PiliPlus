@@ -1028,6 +1028,9 @@ abstract final class Pref {
   static bool get floatingNavBar =>
       _setting.get(SettingBoxKey.floatingNavBar, defaultValue: false);
 
+  static bool get carPlayFullScreen =>
+      _setting.get(SettingBoxKey.carPlayFullScreen, defaultValue: false);
+
   static bool get removeSafeArea =>
       _setting.get(SettingBoxKey.removeSafeArea, defaultValue: false);
 

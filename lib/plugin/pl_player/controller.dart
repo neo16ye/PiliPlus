@@ -1335,7 +1335,8 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
   bool isManualFS = true;
   late final FullScreenMode mode = Pref.fullScreenMode;
   late final horizontalScreen = Pref.horizontalScreen;
-  late final removeSafeArea = Pref.removeSafeArea;
+  late final removeSafeArea =
+      Pref.removeSafeArea || (Platform.isIOS && Pref.carPlayFullScreen);
 
   Future<void>? changeOrientation({
     required bool isVertical,
