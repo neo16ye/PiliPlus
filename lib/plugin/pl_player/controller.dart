@@ -67,12 +67,17 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
 typedef PlayCallback = Future<void>? Function();
+typedef NewPlayerConsumerCallback = void Function(PlPlayerController controller);
 
 class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
   Player? _videoPlayerController;
   VideoController? _videoController;
 
   static PlPlayerController? _instance;
+  static NewPlayerConsumerCallback? onNewPlayerConsumer;
+
+  bool isAppMiniPlayer = false;
+  bool Function()? onAppMiniPlayerRequested;
 
   final playerStatus = PlPlayerStatus(.playing);
 
@@ -564,9 +569,11 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
   // 获取实例 传参
   static PlPlayerController getInstance({bool isLive = false}) {
     // 如果实例尚未创建，则创建一个新实例
-    return (_instance ??= PlPlayerController._())
+    final controller = (_instance ??= PlPlayerController._())
       ..isLive = isLive
       .._playerCount += 1;
+    onNewPlayerConsumer?.call(controller);
+    return controller;
   }
 
   bool _processing = false;
@@ -1529,6 +1536,8 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
     }
 
     _playerCount = 0;
+    isAppMiniPlayer = false;
+    onAppMiniPlayerRequested = null;
     if (removeSafeArea) {
       showSystemBar();
     }
@@ -1686,14 +1695,17 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
 
   void onPopInvokedWithResult(bool didPop, Object? result) {
     if (didPop) {
-      if (playerStatus.isPlaying) {
+      if (!isAppMiniPlayer && playerStatus.isPlaying) {
         pause();
       }
 
       setPlayCallBack(null);
+      onAppMiniPlayerRequested = null;
 
       if (Platform.isAndroid && _playerCount <= 1) {
-        _disableAutoEnterPip();
+        if (!isAppMiniPlayer) {
+          _disableAutoEnterPip();
+        }
         if (!setSystemBrightness) {
           ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
         }
@@ -1712,6 +1724,9 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
     }
     if (isFullScreen.value) {
       triggerFullScreen(status: false);
+      return;
+    }
+    if (onAppMiniPlayerRequested?.call() == true) {
       return;
     }
     Get.back();
