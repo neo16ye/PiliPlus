@@ -32,12 +32,14 @@ def adb(*args: str, capture: bool = False, check: bool = True):
 
 def screenshot(name: str) -> Path:
     path = OUTPUT / f"{name}.png"
+    started = time.monotonic()
     result = subprocess.run(
         ["adb", "exec-out", "screencap", "-p"],
         check=True,
         capture_output=True,
     )
     path.write_bytes(result.stdout)
+    print(f"{name}: screenshot={time.monotonic() - started:.2f}s", flush=True)
     return path
 
 
@@ -209,6 +211,13 @@ def capture_motion(tag: str, region: tuple[int, int, int, int]):
 
 
 def main():
+    # The hosted emulator renders in software. Its native 1080x2400 screenshots
+    # can each take around 14 seconds, making this three-cycle UI test consume
+    # more than three minutes of the live stream before it finishes. Use a
+    # phone-shaped half-resolution display so each frame capture is fast while
+    # preserving the same Flutter navigation and Android texture behavior.
+    adb("shell", "wm", "size", "540x1200")
+    adb("shell", "wm", "density", "280")
     width, height = screen_size()
     adb("install", "-r", "build/app/outputs/flutter-apk/app-debug.apk")
     adb("logcat", "-c")
