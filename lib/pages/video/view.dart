@@ -88,8 +88,11 @@ class VideoDetailPageV extends StatefulWidget {
 class _VideoDetailPageVState extends State<VideoDetailPageV>
     with RouteAware, RouteAwareMixin, WidgetsBindingObserver {
   final heroTag = Get.arguments['heroTag'];
+  final bool _restoringAppMiniPlayer =
+      Get.arguments[appMiniPlayerRestoreKey] == true;
 
   late final VideoDetailController videoDetailController;
+  late final bool _reuseAppMiniPlayer;
   late final VideoReplyController _videoReplyController;
   PlPlayerController? plPlayerController;
 
@@ -143,6 +146,10 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
     PlPlayerController.setPlayCallBack(playCallBack);
     videoDetailController = Get.put(VideoDetailController(), tag: heroTag);
+    _reuseAppMiniPlayer =
+        _restoringAppMiniPlayer &&
+        videoDetailController.plPlayerController.videoController != null;
+    videoDetailController.args.remove(appMiniPlayerRestoreKey);
     videoDetailController.plPlayerController.onAppMiniPlayerRequested =
         _beginAppMiniPlayer;
 
@@ -213,6 +220,18 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
   // 获取视频资源，初始化播放器
   void videoSourceInit() {
+    if (_reuseAppMiniPlayer) {
+      plPlayerController = videoDetailController.plPlayerController;
+      videoDetailController
+        ..autoPlay = true
+        ..videoState.value = true;
+      plPlayerController!
+        ..addStatusLister(playerListener)
+        ..addPositionListener(positionListener);
+      videoDetailController.queryVideoUrl(reuseCurrentPlayer: true);
+      return;
+    }
+
     videoDetailController.queryVideoUrl(autoFullScreenFlag: true);
     if (videoDetailController.autoPlay) {
       plPlayerController = videoDetailController.plPlayerController;

@@ -3,6 +3,7 @@ import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:get/get.dart';
 
 final miniPlayerService = MiniPlayerService();
+const appMiniPlayerRestoreKey = '_appMiniPlayerRestore';
 
 class MiniPlayerSession {
   const MiniPlayerSession({
@@ -70,7 +71,7 @@ class MiniPlayerService {
     // Remove the miniature surface before the detail page attaches a new one.
     session.value = current.copyWith(active: false);
     final arguments = Map<String, dynamic>.from(current.arguments)
-      ..['progress'] = current.controller.positionInMilliseconds;
+      ..[appMiniPlayerRestoreKey] = true;
     Get.toNamed('/videoV', arguments: arguments);
   }
 
@@ -86,6 +87,11 @@ class MiniPlayerService {
     final current = session.value;
     if (current == null || !identical(current.controller, controller)) return;
 
+    // A different video page opened while the miniature was visible. Pause
+    // the old media; a restore hides the miniature before opening its page.
+    if (current.active) {
+      controller.pause();
+    }
     controller.isAppMiniPlayer = false;
     session.value = null;
 
