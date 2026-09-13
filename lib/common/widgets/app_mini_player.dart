@@ -12,8 +12,12 @@ class AppMiniPlayer extends StatelessWidget {
   const AppMiniPlayer({super.key});
 
   @override
-  Widget build(BuildContext context) => Obx(() {
-    final session = miniPlayerService.session.value;
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: miniPlayerService.session,
+    builder: (context, session, _) => _buildPlayer(context, session),
+  );
+
+  Widget _buildPlayer(BuildContext context, MiniPlayerSession? session) {
     final controller = session?.controller;
     final videoController = controller?.videoController;
     if (session == null ||
@@ -127,5 +131,5 @@ class AppMiniPlayer extends StatelessWidget {
         ),
       ),
     );
-  });
+  }
 }

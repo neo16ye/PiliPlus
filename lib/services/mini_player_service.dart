@@ -1,5 +1,7 @@
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 final miniPlayerService = MiniPlayerService();
@@ -34,7 +36,7 @@ class MiniPlayerService {
     PlPlayerController.onNewPlayerConsumer = _releaseForNewPlayer;
   }
 
-  final Rxn<MiniPlayerSession> session = Rxn<MiniPlayerSession>();
+  final ValueNotifier<MiniPlayerSession?> session = ValueNotifier(null);
 
   bool begin({
     required PlPlayerController controller,
@@ -62,6 +64,11 @@ class MiniPlayerService {
     final current = session.value;
     if (current == null || current.heroTag != heroTag) return;
     session.value = current.copyWith(active: true);
+  }
+
+  Future<void> activateAfterPop(String heroTag) async {
+    await SchedulerBinding.instance.endOfFrame;
+    activate(heroTag);
   }
 
   void restore() {

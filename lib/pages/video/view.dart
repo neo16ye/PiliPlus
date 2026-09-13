@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 import 'dart:math';
 
@@ -197,6 +198,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   bool _beginAppMiniPlayer() {
     if (!_shouldStartAppMiniPlayer) return false;
 
+    final route = ModalRoute.of(context);
     final mediaTitle = videoPlayerServiceHandler?.mediaItem.value?.title;
     final started = miniPlayerService.begin(
       controller: plPlayerController!,
@@ -211,8 +213,15 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     _miniPlayerPopPending = true;
     if (mounted) setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && Get.currentRoute == '/videoV') {
-        Get.back();
+      if (!mounted || route?.isCurrent == false) return;
+
+      Get.back();
+      if (route case final route?) {
+        unawaited(
+          route.completed.then((_) => miniPlayerService.activate(heroTag)),
+        );
+      } else {
+        unawaited(miniPlayerService.activateAfterPop(heroTag));
       }
     });
     return true;
@@ -412,12 +421,6 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (!videoDetailController.plPlayerController.isCloseAll) {
       if (plPlayerController?.isAppMiniPlayer == true) {
         videoDetailController.makeHeartBeat();
-        // Updating the root overlay while this route is being disposed can
-        // miss a rebuild because the widget tree is locked. Activate it on
-        // the first frame after the pop has completed.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          miniPlayerService.activate(heroTag);
-        });
       } else {
         videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
         if (plPlayerController != null) {
