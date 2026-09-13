@@ -83,9 +83,7 @@ class AppMiniPlayer extends StatelessWidget {
                         backgroundColor: Colors.black54,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: isPlaying
-                          ? controller.pause
-                          : controller.play,
+                      onPressed: isPlaying ? controller.pause : controller.play,
                       icon: Icon(
                         isPlaying
                             ? Icons.pause_rounded
