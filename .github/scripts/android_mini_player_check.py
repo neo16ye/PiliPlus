@@ -101,29 +101,18 @@ def screen_size() -> tuple[int, int]:
     return int(match.group(1)), int(match.group(2))
 
 
-def media_session_is_playing() -> bool:
-    output = adb("shell", "dumpsys", "media_session", capture=True).stdout
-    pattern = re.compile(
-        rf"package={re.escape(PACKAGE)}.*?state=PlaybackState \{{state=3",
-        re.DOTALL,
-    )
-    return pattern.search(output) is not None
-
-
-def ensure_playing(tag: str):
+def start_initial_playback(tag: str):
     width, height = screen_size()
-    for attempt in range(8):
-        if media_session_is_playing():
-            return
-        root = dump_ui(f"{tag}-controls-{attempt}")
-        play = find_node(root, "播放", exact=True)
-        if play is not None:
-            tap_node(play)
-            time.sleep(2)
-            continue
+    root = dump_ui(f"{tag}-controls")
+    play = find_node(root, "播放", exact=True)
+    if play is None:
         adb("shell", "input", "tap", str(width // 2), str(round(height * 0.18)))
         time.sleep(0.6)
-    raise AssertionError("The video did not expose a playing/pause control state")
+        root = dump_ui(f"{tag}-controls-revealed")
+        play = find_node(root, "播放", exact=True)
+    if play is not None:
+        tap_node(play)
+        time.sleep(3)
 
 
 def decode_png(path: Path):
@@ -237,7 +226,7 @@ def main():
         PACKAGE,
     )
     wait_for_node("简介", "video-initial", timeout=45)
-    ensure_playing("video-initial")
+    start_initial_playback("video-initial")
     capture_motion(
         "video-initial",
         (0, round(height * 0.05), width, round(height * 0.31)),
@@ -252,7 +241,6 @@ def main():
         # Tap away from the center pause button and the top-right close button.
         tap_node(mini, x_fraction=0.22, y_fraction=0.62)
         wait_for_node("简介", f"cycle-{cycle}-restored", timeout=20)
-        ensure_playing(f"cycle-{cycle}-restored")
         capture_motion(
             f"cycle-{cycle}-restored",
             (0, round(height * 0.05), width, round(height * 0.31)),
