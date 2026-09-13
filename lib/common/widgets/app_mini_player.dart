@@ -12,12 +12,8 @@ class AppMiniPlayer extends StatelessWidget {
   const AppMiniPlayer({super.key});
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: miniPlayerService.session,
-    builder: (context, session, _) => _buildPlayer(context, session),
-  );
-
-  Widget _buildPlayer(BuildContext context, MiniPlayerSession? session) {
+  Widget build(BuildContext context) => Obx(() {
+    final session = miniPlayerService.session.value;
     final controller = session?.controller;
     final videoController = controller?.videoController;
     if (session == null ||
@@ -83,7 +79,9 @@ class AppMiniPlayer extends StatelessWidget {
                         backgroundColor: Colors.black54,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: isPlaying ? controller.pause : controller.play,
+                      onPressed: isPlaying
+                          ? controller.pause
+                          : controller.play,
                       icon: Icon(
                         isPlaying
                             ? Icons.pause_rounded
@@ -129,5 +127,5 @@ class AppMiniPlayer extends StatelessWidget {
         ),
       ),
     );
-  }
+  });
 }

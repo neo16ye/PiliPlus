@@ -412,9 +412,9 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (!videoDetailController.plPlayerController.isCloseAll) {
       if (plPlayerController?.isAppMiniPlayer == true) {
         videoDetailController.makeHeartBeat();
-        // The player surface can move safely only after this route has been
-        // detached. ValueListenableBuilder then delivers every activation to
-        // the root overlay, including repeated restore/pop cycles.
+        // Updating the root overlay while this route is being disposed can
+        // miss a rebuild because the widget tree is locked. Activate it on
+        // the first frame after the pop has completed.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           miniPlayerService.activate(heroTag);
         });

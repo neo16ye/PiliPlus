@@ -1,6 +1,5 @@
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 final miniPlayerService = MiniPlayerService();
@@ -35,7 +34,7 @@ class MiniPlayerService {
     PlPlayerController.onNewPlayerConsumer = _releaseForNewPlayer;
   }
 
-  final ValueNotifier<MiniPlayerSession?> session = ValueNotifier(null);
+  final Rxn<MiniPlayerSession> session = Rxn<MiniPlayerSession>();
 
   bool begin({
     required PlPlayerController controller,
