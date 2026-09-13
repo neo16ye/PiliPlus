@@ -418,6 +418,11 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         WidgetsBinding.instance.addPostFrameCallback((_) {
           miniPlayerService.activate(heroTag);
         });
+        // This dispose can itself run from the post-frame callback that pops
+        // the restored video route. addPostFrameCallback does not request a
+        // new frame, so a static browser page could otherwise leave the
+        // activation queued until the app is backgrounded or repainted.
+        WidgetsBinding.instance.scheduleFrame();
       } else {
         videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
         if (plPlayerController != null) {

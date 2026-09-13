@@ -8,7 +8,7 @@ on:
 jobs:
   emulator:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -40,10 +40,13 @@ jobs:
         shell: pwsh
         run: lib/scripts/patch.ps1 android
 
+      - name: Analyze changed Dart code
+        run: flutter analyze --no-pub lib/pages/video/view.dart lib/services/mini_player_service.dart lib/common/widgets/app_mini_player.dart
+
       - name: Build debug APK
         run: flutter build apk --debug --android-project-arg dev=1 --no-pub
 
-      - name: Exercise repeated mini player cycle
+      - name: Exercise three repeated mini-player cycles
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -52,34 +55,18 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            mkdir -p test-output
-            adb install -r build/app/outputs/flutter-apk/app-debug.apk
-            adb shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d 'bilibili://video/170001' com.example.piliplus.debug
-            sleep 30
-            adb exec-out screencap -p > test-output/video-initial.png
-
-            adb shell input keyevent 4
-            sleep 4
-            adb exec-out screencap -p > test-output/cycle-1-mini.png
-            adb shell uiautomator dump /sdcard/cycle-1.xml
-            adb pull /sdcard/cycle-1.xml test-output/cycle-1.xml
-
-            adb shell input tap 760 1960
-            sleep 8
-            adb exec-out screencap -p > test-output/cycle-1-restored.png
-
-            adb shell input keyevent 4
-            sleep 4
-            adb exec-out screencap -p > test-output/cycle-2-mini.png
-            adb shell uiautomator dump /sdcard/cycle-2.xml
-            adb pull /sdcard/cycle-2.xml test-output/cycle-2.xml
-
-            adb logcat -d -v time '*:E' > test-output/logcat-errors.txt
+          script: python3 .github/scripts/android_mini_player_check.py
 
       - name: Upload emulator evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: fix2-emulator-evidence-kvm
+          name: mini-player-three-cycle-evidence
           path: test-output/
+
+      - name: Upload tested APK
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: PiliPlus-fix2-next-frame-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
