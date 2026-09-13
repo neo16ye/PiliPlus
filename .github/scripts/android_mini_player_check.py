@@ -120,6 +120,19 @@ def start_initial_playback(tag: str):
         time.sleep(3)
 
 
+def dismiss_startup_dialogs(tag: str):
+    # A fresh release install may show the update notice over the video page.
+    # UI Automator can still see labels behind a modal, so dismiss it before
+    # deciding that playback controls are ready.
+    for attempt in range(3):
+        root = dump_ui(f"{tag}-dialog-{attempt}")
+        cancel = find_node(root, "取消", exact=True)
+        if cancel is None:
+            return
+        tap_node(cancel)
+        time.sleep(0.75)
+
+
 def decode_png(path: Path):
     data = path.read_bytes()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
@@ -238,6 +251,7 @@ def main():
         PACKAGE,
     )
     wait_for_node("简介", "video-initial", timeout=45)
+    dismiss_startup_dialogs("video-initial")
     start_initial_playback("video-initial")
     capture_motion(
         "video-initial",
