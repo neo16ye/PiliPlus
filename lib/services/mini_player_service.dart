@@ -1,5 +1,6 @@
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 final miniPlayerService = MiniPlayerService();
@@ -93,10 +94,19 @@ class MiniPlayerService {
       controller.pause();
     }
     controller.isAppMiniPlayer = false;
-    session.value = null;
 
     // getInstance has just added the new page's reference. Release the
     // reference that was retained by the miniature player.
     PlPlayerController.updatePlayCount();
+
+    // getInstance can be called while the destination video page is building.
+    // Clearing the Rx session synchronously would mark the root Obx dirty in
+    // the middle of that build and leave the restored page blank.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (identical(session.value, current)) {
+        session.value = null;
+      }
+    });
+    WidgetsBinding.instance.scheduleFrame();
   }
 }

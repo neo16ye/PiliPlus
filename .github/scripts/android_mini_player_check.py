@@ -254,6 +254,8 @@ def main():
         raise AssertionError(
             "The app mini-player built a Tooltip without an Overlay ancestor"
         )
+    if "setState() or markNeedsBuild() called during build" in logs:
+        raise AssertionError("The app mini-player mutated reactive state during build")
     print("PASS: three consecutive app mini-player restore cycles", flush=True)
 
 
