@@ -1,4 +1,3 @@
-import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 import 'dart:math';
 
@@ -198,7 +197,6 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   bool _beginAppMiniPlayer() {
     if (!_shouldStartAppMiniPlayer) return false;
 
-    final route = ModalRoute.of(context);
     final mediaTitle = videoPlayerServiceHandler?.mediaItem.value?.title;
     final started = miniPlayerService.begin(
       controller: plPlayerController!,
@@ -213,15 +211,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     _miniPlayerPopPending = true;
     if (mounted) setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || route?.isCurrent == false) return;
-
-      Get.back();
-      if (route case final route?) {
-        unawaited(
-          route.completed.then((_) => miniPlayerService.activate(heroTag)),
-        );
-      } else {
-        unawaited(miniPlayerService.activateAfterPop(heroTag));
+      if (mounted && Get.currentRoute == '/videoV') {
+        Get.back();
       }
     });
     return true;
@@ -421,6 +412,12 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (!videoDetailController.plPlayerController.isCloseAll) {
       if (plPlayerController?.isAppMiniPlayer == true) {
         videoDetailController.makeHeartBeat();
+        // The player surface can move safely only after this route has been
+        // detached. ValueListenableBuilder then delivers every activation to
+        // the root overlay, including repeated restore/pop cycles.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          miniPlayerService.activate(heroTag);
+        });
       } else {
         videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
         if (plPlayerController != null) {
