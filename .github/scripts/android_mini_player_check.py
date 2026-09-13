@@ -249,6 +249,11 @@ def main():
             (0, round(height * 0.05), width, round(height * 0.31)),
         )
 
+    logs = adb("logcat", "-d", capture=True).stdout
+    if "No Overlay widget found" in logs:
+        raise AssertionError(
+            "The app mini-player built a Tooltip without an Overlay ancestor"
+        )
     print("PASS: three consecutive app mini-player restore cycles", flush=True)
 
 

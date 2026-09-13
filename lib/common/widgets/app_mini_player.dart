@@ -52,8 +52,11 @@ class AppMiniPlayer extends StatelessWidget {
       bottom: bottom,
       width: width,
       child: Semantics(
+        container: true,
+        explicitChildNodes: true,
         label: '应用内小窗：${session.title}',
         button: true,
+        onTap: miniPlayerService.restore,
         child: Material(
           elevation: 10,
           color: Colors.black,
@@ -73,35 +76,48 @@ class AppMiniPlayer extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Obx(() {
                     final isPlaying = controller.playerStatus.isPlaying;
-                    return IconButton.filledTonal(
-                      tooltip: isPlaying ? '暂停' : '继续播放',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black54,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: isPlaying
-                          ? controller.pause
-                          : controller.play,
-                      icon: Icon(
-                        isPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
+                    final onPressed = isPlaying
+                        ? controller.pause
+                        : controller.play;
+                    return Semantics(
+                      label: isPlaying ? '暂停' : '继续播放',
+                      button: true,
+                      onTap: onPressed,
+                      child: ExcludeSemantics(
+                        child: IconButton.filledTonal(
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black54,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: onPressed,
+                          icon: Icon(
+                            isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                        ),
                       ),
                     );
                   }),
                 ),
                 Align(
                   alignment: Alignment.topRight,
-                  child: IconButton(
-                    tooltip: '关闭小窗',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.square(32),
-                      padding: EdgeInsets.zero,
+                  child: Semantics(
+                    label: '关闭小窗',
+                    button: true,
+                    onTap: miniPlayerService.close,
+                    child: ExcludeSemantics(
+                      child: IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.square(32),
+                          padding: EdgeInsets.zero,
+                        ),
+                        onPressed: miniPlayerService.close,
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                      ),
                     ),
-                    onPressed: miniPlayerService.close,
-                    icon: const Icon(Icons.close_rounded, size: 20),
                   ),
                 ),
                 Align(
