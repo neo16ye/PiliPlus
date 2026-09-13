@@ -1,0 +1,52 @@
+name: Android mini player check
+
+on:
+  push:
+    branches:
+      - feat/android-in-app-mini-player
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            android/*.gradle*
+            android/**/gradle-wrapper.properties
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+
+      - name: Apply project patches
+        shell: pwsh
+        run: lib/scripts/patch.ps1 android
+
+      - name: Check source formatting
+        run: dart format --output=none --set-exit-if-changed lib/common/widgets/app_mini_player.dart lib/pages/video/controller.dart lib/pages/video/view.dart lib/services/mini_player_service.dart
+
+      - name: Analyze
+        run: flutter analyze --no-pub --no-fatal-infos
+
+      - name: Build Android APKs
+        run: flutter build apk --release --split-per-abi --android-project-arg dev=1 --no-pub
+
+      - name: Upload arm64 APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: PiliPlus-mini-player-arm64-fix4
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
