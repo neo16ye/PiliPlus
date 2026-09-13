@@ -412,7 +412,12 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (!videoDetailController.plPlayerController.isCloseAll) {
       if (plPlayerController?.isAppMiniPlayer == true) {
         videoDetailController.makeHeartBeat();
-        miniPlayerService.activate(heroTag);
+        // Updating the root overlay while this route is being disposed can
+        // miss a rebuild because the widget tree is locked. Activate it on
+        // the first frame after the pop has completed.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          miniPlayerService.activate(heroTag);
+        });
       } else {
         videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
         if (plPlayerController != null) {
