@@ -214,6 +214,14 @@ List<SettingsModel> get playSettings => [
       setKey: SettingBoxKey.continuePlayInBackground,
       defaultVal: false,
     ),
+  if (Platform.isAndroid)
+    const SwitchModel(
+      title: '应用内小窗播放',
+      subtitle: '播放视频时返回浏览页面，自动缩成应用内小窗继续播放',
+      leading: Icon(Icons.picture_in_picture_alt_outlined),
+      setKey: SettingBoxKey.enableAppMiniPlayer,
+      defaultVal: true,
+    ),
   if (Platform.isAndroid) ...[
     SwitchModel(
       title: '后台画中画',

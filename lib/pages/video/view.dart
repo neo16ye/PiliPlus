@@ -53,6 +53,7 @@ import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/plugin/pl_player/view/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
+import 'package:PiliPlus/services/mini_player_service.dart';
 import 'package:PiliPlus/services/shutdown_timer_service.dart'
     show shutdownTimerService;
 import 'package:PiliPlus/utils/accounts.dart';
@@ -67,6 +68,7 @@ import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, clampDouble;
@@ -86,8 +88,11 @@ class VideoDetailPageV extends StatefulWidget {
 class _VideoDetailPageVState extends State<VideoDetailPageV>
     with RouteAware, RouteAwareMixin, WidgetsBindingObserver {
   final heroTag = Get.arguments['heroTag'];
+  final bool _restoringAppMiniPlayer =
+      Get.arguments[appMiniPlayerRestoreKey] == true;
 
   late final VideoDetailController videoDetailController;
+  late final bool _reuseAppMiniPlayer;
   late final VideoReplyController _videoReplyController;
   PlPlayerController? plPlayerController;
 
@@ -141,6 +146,12 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
     PlPlayerController.setPlayCallBack(playCallBack);
     videoDetailController = Get.put(VideoDetailController(), tag: heroTag);
+    _reuseAppMiniPlayer =
+        _restoringAppMiniPlayer &&
+        videoDetailController.plPlayerController.videoController != null;
+    videoDetailController.args.remove(appMiniPlayerRestoreKey);
+    videoDetailController.plPlayerController.onAppMiniPlayerRequested =
+        _beginAppMiniPlayer;
 
     if (videoDetailController.removeSafeArea) {
       hideSystemBar();
@@ -170,8 +181,57 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     addObserverMobile(this);
   }
 
+  bool _miniPlayerPopPending = false;
+
+  bool get _shouldStartAppMiniPlayer {
+    final controller = plPlayerController;
+    return !_miniPlayerPopPending &&
+        Platform.isAndroid &&
+        Pref.enableAppMiniPlayer &&
+        controller != null &&
+        !controller.isAppMiniPlayer &&
+        !controller.isLive &&
+        controller.playerStatus.isPlaying;
+  }
+
+  bool _beginAppMiniPlayer() {
+    if (!_shouldStartAppMiniPlayer) return false;
+
+    final mediaTitle = videoPlayerServiceHandler?.mediaItem.value?.title;
+    final started = miniPlayerService.begin(
+      controller: plPlayerController!,
+      arguments: videoDetailController.args,
+      heroTag: heroTag,
+      title: mediaTitle?.isNotEmpty == true
+          ? mediaTitle!
+          : (videoDetailController.args['title'] as String? ?? '正在播放'),
+    );
+    if (!started) return false;
+
+    _miniPlayerPopPending = true;
+    if (mounted) setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && Get.currentRoute == '/videoV') {
+        Get.back();
+      }
+    });
+    return true;
+  }
+
   // 获取视频资源，初始化播放器
   void videoSourceInit() {
+    if (_reuseAppMiniPlayer) {
+      plPlayerController = videoDetailController.plPlayerController;
+      videoDetailController
+        ..autoPlay = true
+        ..videoState.value = true;
+      plPlayerController!
+        ..addStatusLister(playerListener)
+        ..addPositionListener(positionListener);
+      videoDetailController.queryVideoUrl(reuseCurrentPlayer: true);
+      return;
+    }
+
     videoDetailController.queryVideoUrl(autoFullScreenFlag: true);
     if (videoDetailController.autoPlay) {
       plPlayerController = videoDetailController.plPlayerController;
@@ -350,12 +410,27 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
 
     if (!videoDetailController.plPlayerController.isCloseAll) {
-      videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
-      if (plPlayerController != null) {
+      if (plPlayerController?.isAppMiniPlayer == true) {
         videoDetailController.makeHeartBeat();
-        plPlayerController!.dispose();
+        // Updating the root overlay while this route is being disposed can
+        // miss a rebuild because the widget tree is locked. Activate it on
+        // the first frame after the pop has completed.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          miniPlayerService.activate(heroTag);
+        });
+        // This dispose can itself run from the post-frame callback that pops
+        // the restored video route. addPostFrameCallback does not request a
+        // new frame, so a static browser page could otherwise leave the
+        // activation queued until the app is backgrounded or repainted.
+        WidgetsBinding.instance.scheduleFrame();
       } else {
-        PlPlayerController.updatePlayCount();
+        videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
+        if (plPlayerController != null) {
+          videoDetailController.makeHeartBeat();
+          plPlayerController!.dispose();
+        } else {
+          PlPlayerController.updatePlayCount();
+        }
       }
     }
     removeObserverMobile(this);
@@ -411,6 +486,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
 
     PlPlayerController.setPlayCallBack(playCallBack);
+    videoDetailController.plPlayerController.onAppMiniPlayerRequested =
+        _beginAppMiniPlayer;
 
     introController.startTimer();
 
@@ -655,7 +732,9 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                           size: 15,
                           color: colorScheme.onSurface,
                         ),
-                        onPressed: Get.back,
+                        onPressed: () => videoDetailController
+                            .plPlayerController
+                            .onPopInvokedWithResult(false, null),
                       ),
                     ),
                     SizedBox(
@@ -1203,7 +1282,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     canPop:
         !isFullScreen &&
         !videoDetailController.plPlayerController.isDesktopPip &&
-        (videoDetailController.horizontalScreen || isPortrait),
+        (videoDetailController.horizontalScreen || isPortrait) &&
+        !_shouldStartAppMiniPlayer,
     onPopInvokedWithResult:
         videoDetailController.plPlayerController.onPopInvokedWithResult,
     child: Obx(

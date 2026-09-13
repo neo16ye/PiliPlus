@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:PiliPlus/build_config.dart';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/back_detector.dart';
+import 'package:PiliPlus/common/widgets/app_mini_player.dart';
 import 'package:PiliPlus/common/widgets/custom_toast.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/common/widgets/scale_app.dart';
@@ -331,6 +332,12 @@ class MyApp extends StatelessWidget {
       return BackDetector(
         onBack: _onBack,
         child: child,
+      );
+    }
+    if (Platform.isAndroid) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [child, const AppMiniPlayer()],
       );
     }
     return child;
