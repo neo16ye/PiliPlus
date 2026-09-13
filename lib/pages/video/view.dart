@@ -722,7 +722,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                           size: 15,
                           color: colorScheme.onSurface,
                         ),
-                        onPressed: () => videoDetailController.plPlayerController
+                        onPressed: () => videoDetailController
+                            .plPlayerController
                             .onPopInvokedWithResult(false, null),
                       ),
                     ),
