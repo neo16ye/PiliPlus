@@ -8,7 +8,7 @@ on:
 jobs:
   emulator:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     permissions:
       contents: read
 
@@ -29,6 +29,12 @@ jobs:
           channel: stable
           flutter-version-file: pubspec.yaml
           cache: true
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Apply project patches
         shell: pwsh
@@ -56,9 +62,8 @@ jobs:
             adb shell input keyevent 4
             sleep 4
             adb exec-out screencap -p > test-output/cycle-1-mini.png
-            adb shell uiautomator dump /sdcard/cycle-1.xml || true
-            adb pull /sdcard/cycle-1.xml test-output/cycle-1.xml || true
-            grep -o 'content-desc="应用内小窗[^"]*"' test-output/cycle-1.xml || true
+            adb shell uiautomator dump /sdcard/cycle-1.xml
+            adb pull /sdcard/cycle-1.xml test-output/cycle-1.xml
 
             adb shell input tap 760 1960
             sleep 8
@@ -67,9 +72,8 @@ jobs:
             adb shell input keyevent 4
             sleep 4
             adb exec-out screencap -p > test-output/cycle-2-mini.png
-            adb shell uiautomator dump /sdcard/cycle-2.xml || true
-            adb pull /sdcard/cycle-2.xml test-output/cycle-2.xml || true
-            grep -o 'content-desc="应用内小窗[^"]*"' test-output/cycle-2.xml || true
+            adb shell uiautomator dump /sdcard/cycle-2.xml
+            adb pull /sdcard/cycle-2.xml test-output/cycle-2.xml
 
             adb logcat -d -v time '*:E' > test-output/logcat-errors.txt
 
@@ -77,5 +81,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: fix2-emulator-evidence-api34
+          name: fix2-emulator-evidence-kvm
           path: test-output/
