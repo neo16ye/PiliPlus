@@ -10,7 +10,10 @@ import zlib
 from pathlib import Path
 
 
-PACKAGE = "com.example.piliplus.debug"
+PACKAGE = os.environ.get("TEST_PACKAGE", "com.example.piliplus.debug")
+APK_PATH = os.environ.get(
+    "TEST_APK", "build/app/outputs/flutter-apk/app-debug.apk"
+)
 VIDEO_URI = "bilibili://video/170001"
 OUTPUT = Path(os.environ.get("TEST_OUTPUT", "test-output"))
 OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -219,7 +222,7 @@ def main():
     adb("shell", "wm", "size", "540x1200")
     adb("shell", "wm", "density", "280")
     width, height = screen_size()
-    adb("install", "-r", "build/app/outputs/flutter-apk/app-debug.apk")
+    adb("install", "-r", APK_PATH)
     adb("logcat", "-c")
     adb(
         "shell",
