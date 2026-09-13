@@ -8,6 +8,7 @@ on:
 jobs:
   emulator:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
@@ -39,10 +40,11 @@ jobs:
       - name: Exercise repeated mini player cycle
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             mkdir -p test-output
@@ -75,5 +77,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: fix2-emulator-evidence
+          name: fix2-emulator-evidence-api34
           path: test-output/
