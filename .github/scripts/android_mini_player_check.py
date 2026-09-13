@@ -101,12 +101,21 @@ def screen_size() -> tuple[int, int]:
     return int(match.group(1)), int(match.group(2))
 
 
+def media_session_is_playing() -> bool:
+    output = adb("shell", "dumpsys", "media_session", capture=True).stdout
+    pattern = re.compile(
+        rf"package={re.escape(PACKAGE)}.*?state=PlaybackState \{{state=3",
+        re.DOTALL,
+    )
+    return pattern.search(output) is not None
+
+
 def ensure_playing(tag: str):
     width, height = screen_size()
     for attempt in range(8):
-        root = dump_ui(f"{tag}-controls-{attempt}")
-        if find_node(root, "暂停", exact=True) is not None:
+        if media_session_is_playing():
             return
+        root = dump_ui(f"{tag}-controls-{attempt}")
         play = find_node(root, "播放", exact=True)
         if play is not None:
             tap_node(play)
